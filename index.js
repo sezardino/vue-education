@@ -13,7 +13,24 @@ const App = {
     },
     submitHandler(evt) {
       evt.preventDefault();
-      this.notes.push(evt.target.value);
+      if (this.inputValue !== "") {
+        this.notes.push(this.inputValue);
+        this.inputValue = "";
+      }
+    },
+    removeHandler(index) {
+      this.notes.splice(index, 1);
+    },
+  },
+  computed: {
+    dabbledLength() {
+      console.log("enter");
+      return this.notes.length * 2;
+    },
+  },
+  watch: {
+    inputValue(value) {
+      console.log("New value: ", value);
     },
   },
 };

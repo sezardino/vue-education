@@ -21,10 +21,19 @@
           <button class="btn">Add</button>
         </form>
         <h2>InputValue: {{inputValue}}</h2>
-
-        <ul class="list">
-          <li v-for="note in notes">{{note}}</li>
-        </ul>
+        <div v-if="notes.length !== 0">
+          <ul class="list">
+            <li class="list-item" v-for="(note, index) in notes">
+              {{note}}
+              <button class="btn danger" v-on:click="removeHandler(index)">
+                Delete
+              </button>
+            </li>
+          </ul>
+          <hr />
+          <p>Total todos: {{notes.length}} | dabbled: {{dabbledLength}}</p>
+        </div>
+        <p v-else>The are no ToDo, write something</p>
       </div>
     </div>
 
