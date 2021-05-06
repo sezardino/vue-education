@@ -10,11 +10,21 @@
   <body>
     <div class="container" id="app">
       <div class="card">
-        <h1 class="title">ToDo List</h1>
-        <div class="form-control">
-          <input type="text" placeholder="Add todo" />
-        </div>
-        <button class="btn">Add</button>
+        <h1 class="title">{{title}}</h1>
+        <form class="form-control" v-on:submit="submitHandler">
+          <input
+            type="text"
+            v-bind:placeholder="placeholderText"
+            v-bind:value="inputValue"
+            v-on:input="inputHandler"
+          />
+          <button class="btn">Add</button>
+        </form>
+        <h2>InputValue: {{inputValue}}</h2>
+
+        <ul class="list">
+          <li v-for="note in notes">{{note}}</li>
+        </ul>
       </div>
     </div>
 
