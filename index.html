@@ -1,43 +1,48 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vue Education</title>
-    <link rel="stylesheet" href="./index.css" />
-  </head>
-  <body>
-    <div class="container" id="app">
-      <div class="card">
-        <h1 class="title">{{title}}</h1>
-        <form class="form-control" v-on:submit="submitHandler">
-          <input
-            type="text"
-            v-bind:placeholder="placeholderText"
-            v-bind:value="inputValue"
-            v-on:input="inputHandler"
-          />
-          <button class="btn">Add</button>
-        </form>
-        <h2>InputValue: {{inputValue}}</h2>
-        <div v-if="notes.length !== 0">
-          <ul class="list">
-            <li class="list-item" v-for="(note, index) in notes">
-              {{note}}
-              <button class="btn danger" v-on:click="removeHandler(index)">
-                Delete
-              </button>
-            </li>
-          </ul>
-          <hr />
-          <p>Total todos: {{notes.length}} | dabbled: {{dabbledLength}}</p>
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Vue Education</title>
+        <link rel="stylesheet" href="./index.css" />
+    </head>
+    <body>
+        <div class="container" id="app">
+            <div class="card">
+                <h1 class="title">{{title}}</h1>
+                <form class="form-control" v-on:submit="submitHandler">
+                    <input
+                        type="text"
+                        v-bind:placeholder="placeholderText"
+                        v-model="inputValue"
+                    />
+                    <button class="btn">Add</button>
+                </form>
+                <h2>InputValue: {{inputValue}}</h2>
+                <div v-if="notes.length !== 0">
+                    <ul class="list">
+                        <li class="list-item" v-for="(note, index) in notes">
+                            {{note}}
+                            <button
+                                class="btn danger"
+                                v-on:click="removeHandler(index)"
+                            >
+                                Delete
+                            </button>
+                        </li>
+                    </ul>
+                    <hr />
+                    <p>
+                        Total todos: {{notes.length}} | dabbled:
+                        {{dabbledLength}}
+                    </p>
+                </div>
+                <p v-else>The are no ToDo, write something</p>
+            </div>
         </div>
-        <p v-else>The are no ToDo, write something</p>
-      </div>
-    </div>
 
-    <script src="https://unpkg.com/vue@next"></script>
-    <script src="./index.js"></script>
-  </body>
+        <script src="https://unpkg.com/vue@next"></script>
+        <script src="./index.js"></script>
+    </body>
 </html>
