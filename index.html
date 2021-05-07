@@ -10,7 +10,9 @@
     <body>
         <div class="container" id="app">
             <div class="card">
-                <h1 class="title">{{title}}</h1>
+                <h1 class="title" :style="{
+                  color: inputValue.length > 5 ? 'red' : 'green'
+                }">{{title}}</h1>
                 <form class="form-control" v-on:submit="submitHandler">
                     <input
                         type="text"
