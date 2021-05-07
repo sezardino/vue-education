@@ -23,7 +23,16 @@
                 <div v-if="notes.length !== 0">
                     <ul class="list">
                         <li class="list-item" v-for="(note, index) in notes">
-                            {{note}}
+                            <span :class="['bold', {primary: note.length > 4}]"
+                                >{{note}}</span
+                            >
+                            <!-- <span
+                                :class="{bold: true, primary: note.length > 4}"
+                                >{{note}}</span
+                            > -->
+                            <!-- <span :class="note.length > 4 ? 'primary' : 'bold'"
+                                >{{note}}</span
+                            > -->
                             <button
                                 class="btn danger"
                                 v-on:click="removeHandler(index)"
