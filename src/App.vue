@@ -94,8 +94,10 @@
         <hr class="w-full border-t border-gray-600 my-4" />
         <dl class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-3">
           <div
-            v-for="(item, index) in tikers"
+            v-for="item in tikers"
             :key="item.name"
+            @click="trackSell(item)"
+            :class="{ 'border-4': sell === item }"
             class="bg-white overflow-hidden shadow rounded-lg border-purple-800 border-solid cursor-pointer"
           >
             <div class="px-4 py-5 sm:p-6 text-center">
@@ -108,7 +110,7 @@
             </div>
             <div class="w-full border-t border-gray-200"></div>
             <button
-              @click="removeTiker(index)"
+              @click.stop="removeTiker(item)"
               class="flex items-center justify-center font-medium w-full bg-gray-100 px-4 py-4 sm:px-6 text-md text-gray-500 hover:text-gray-600 hover:bg-gray-200 hover:opacity-20 transition-all focus:outline-none"
             >
               <svg
@@ -129,17 +131,19 @@
         </dl>
         <hr class="w-full border-t border-gray-600 my-4" />
       </template>
-      <section class="relative">
+      <section class="relative" v-if="sell">
         <h3 class="text-lg leading-6 font-medium text-gray-900 my-8">
-          VUE - USD
+          {{ sell.name }} - USD
         </h3>
         <div class="flex items-end border-gray-600 border-b border-l h-64">
-          <div class="bg-purple-800 border w-10 h-24"></div>
-          <div class="bg-purple-800 border w-10 h-32"></div>
-          <div class="bg-purple-800 border w-10 h-48"></div>
-          <div class="bg-purple-800 border w-10 h-16"></div>
+          <div
+            v-for="(bar, index) in styleGraph()"
+            :key="index"
+            :style="{ height: `${bar}%` }"
+            class="bg-purple-800 border w-10"
+          ></div>
         </div>
-        <button type="button" class="absolute top-0 right-0">
+        <button @click="closeSell" type="button" class="absolute top-0 right-0">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             xmlns:xlink="http://www.w3.org/1999/xlink"
@@ -174,24 +178,53 @@ export default {
   data() {
     return {
       tiker: "",
-      tikers: [
-        { name: "WTF", price: 1.1 },
-        { name: "VUE", price: 1.2 },
-        { name: "BTC", price: 1.3 },
-      ],
+      sell: null,
+      graph: [],
+      tikers: [],
     };
   },
 
   methods: {
     addTiker() {
       if (this.tiker) {
-        const tiker = { name: this.tiker, price: 1.4 };
+        const tiker = { name: this.tiker, price: "" };
         this.tikers.push(tiker);
         this.tiker = "";
+        setInterval(async () => {
+          const response = await fetch(
+            `https://min-api.cryptocompare.com/data/price?fsym=${tiker.name}&tsyms=USD`
+          );
+          if (response.ok) {
+            const result = await response.json();
+            this.tikers.find(
+              (item) => item.name === tiker.name
+            ).price = result.USD.toFixed(2);
+            this.graph.push(result.USD);
+          } else {
+            console.log(response.statusText);
+          }
+        }, 5000);
       }
     },
-    removeTiker(index) {
-      this.tikers.splice(index, 1);
+    closeSell() {
+      this.sell = null;
+    },
+    removeTiker(selected) {
+      this.tikers = this.tikers.filter((item) => item.name !== selected.name);
+      if (this.sell?.name === selected.name) {
+        this.closeSell();
+      }
+    },
+    async trackSell(value) {
+      this.sell = value;
+      console.log(value.price);
+    },
+    styleGraph() {
+      const maxValue = Math.max(...this.graph);
+      const minValue = Math.min(...this.graph);
+      return this.graph.map(
+        (price) => 5 + ((price - minValue) * 95) / (maxValue - minValue)
+      );
     },
   },
 };
