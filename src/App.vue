@@ -1,6 +1,7 @@
 <template>
   <div class="container mx-auto flex flex-col items-center bg-gray-100 p-4">
-    <!-- <div
+    <div
+      v-show="loading"
       class="fixed w-100 h-100 opacity-80 bg-purple-800 inset-0 z-50 flex items-center justify-center"
     >
       <svg
@@ -23,7 +24,7 @@
           d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
         ></path>
       </svg>
-    </div> -->
+    </div>
     <div class="container">
       <section>
         <div class="flex">
@@ -43,30 +44,22 @@
               />
             </div>
             <div
+              v-show="helps.length"
               class="flex bg-white shadow-md p-1 rounded-md shadow-md flex-wrap"
             >
-              <span
-                class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer"
-              >
-                BTC
-              </span>
-              <span
-                class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer"
-              >
-                DOGE
-              </span>
-              <span
-                class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer"
-              >
-                BCH
-              </span>
-              <span
-                class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer"
-              >
-                CHD
-              </span>
+              <template v-for="(item, index) in helps" :key="item">
+                <span
+                  v-if="index < 4"
+                  @click="addTiker(item)"
+                  class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer"
+                >
+                  {{ item.toUpperCase() }}
+                </span>
+              </template>
             </div>
-            <div class="text-sm text-red-600">Такой тикер уже добавлен</div>
+            <div v-show="validate" class="text-sm text-red-600">
+              Такой тикер уже добавлен
+            </div>
           </div>
         </div>
         <button
@@ -102,7 +95,7 @@
           >
             <div class="px-4 py-5 sm:p-6 text-center">
               <dt class="text-sm font-medium text-gray-500 truncate">
-                {{ item.name }} - USD
+                {{ item.name.toUpperCase() }} - USD
               </dt>
               <dd class="mt-1 text-3xl font-semibold text-gray-900">
                 {{ item.price }}
@@ -133,7 +126,7 @@
       </template>
       <section class="relative" v-if="sell">
         <h3 class="text-lg leading-6 font-medium text-gray-900 my-8">
-          {{ sell.name }} - USD
+          {{ sell.name.toUpperCase() }} - USD
         </h3>
         <div class="flex items-end border-gray-600 border-b border-l h-64">
           <div
@@ -177,17 +170,27 @@ export default {
 
   data() {
     return {
+      loading: true,
+      validate: false,
       tiker: "",
       sell: null,
       graph: [],
       tikers: [],
+      keys: [],
+      helps: [],
     };
   },
 
   methods: {
-    addTiker() {
-      if (this.tiker) {
-        const tiker = { name: this.tiker, price: "" };
+    addTiker(value) {
+      const tikerName = value ? value : this.tiker;
+      if (this.tikers.find((item) => item.name === tikerName)) {
+        this.validate = true;
+        return;
+      }
+      this.validate = false;
+      if (tikerName) {
+        const tiker = { name: tikerName, price: "-" };
         this.tikers.push(tiker);
         this.tiker = "";
         setInterval(async () => {
@@ -208,6 +211,7 @@ export default {
     },
     closeSell() {
       this.sell = null;
+      this.graph = [];
     },
     removeTiker(selected) {
       this.tikers = this.tikers.filter((item) => item.name !== selected.name);
@@ -216,8 +220,10 @@ export default {
       }
     },
     async trackSell(value) {
-      this.sell = value;
-      console.log(value.price);
+      if (this.sell !== value) {
+        this.sell = value;
+        this.graph = [];
+      }
     },
     styleGraph() {
       const maxValue = Math.max(...this.graph);
@@ -227,8 +233,30 @@ export default {
       );
     },
   },
+
+  watch: {
+    tiker(value) {
+      if (value.length > 2) {
+        this.helps = this.keys.filter((item) => item.includes(value));
+      } else if (value.length === 0) {
+        this.helps = [];
+      }
+    },
+  },
+
+  async created() {
+    const response = await fetch(
+      "https://min-api.cryptocompare.com/data/all/coinlist?summary=true"
+    );
+    if (response.ok) {
+      this.loading = false;
+      const result = await response.json();
+      this.keys = Object.keys(result.Data).map((item) => item.toLowerCase());
+    } else {
+      console.log(response.statusText);
+    }
+  },
 };
 </script>
 
-<style src="./app.css">
-</style>
+<style src="./app.css"></style>
