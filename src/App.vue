@@ -87,11 +87,14 @@
           <button
             class="my-4 mx-2 inline-flex items-center py-2 px-4 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
             v-show="page > 1"
+            @click="page = page - 1"
           >
             Prev
           </button>
           <button
             class="my-4 mx-2 inline-flex items-center py-2 px-4 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+            @click="page = page + 1"
+            v-show="hasNextPage"
           >
             Next
           </button>
@@ -201,6 +204,7 @@ export default {
       keys: [],
       helps: [],
       page: 1,
+      hasNextPage: false,
     };
   },
 
@@ -273,9 +277,14 @@ export default {
     },
 
     filteredList() {
-      return this.tikers.filter((item) =>
+      const filteredList = this.tikers.filter((item) =>
         item.name.includes(this.filter.toLowerCase())
       );
+
+      const start = 3 * (this.page - 1);
+      const end = 3 * this.page;
+
+      return filteredList.slice(start, end);
     },
 
     styleGraph() {
@@ -298,6 +307,17 @@ export default {
         console.log(response.statusText);
       }
     },
+
+    checkHasNextPage() {
+      const count = this.tikers.length;
+      console.log(count);
+      console.log(count > this.page * 3);
+      if (count > this.page * 3) {
+        this.hasNextPage = true;
+      } else {
+        this.hasNextPage = false;
+      }
+    },
   },
 
   watch: {
@@ -310,11 +330,22 @@ export default {
         this.helps = [];
       }
     },
+    page() {
+      this.checkHasNextPage();
+    },
+    filter() {
+      console.log(this.filter);
+    },
+
+    filteredList() {
+      this.checkHasNextPage();
+    },
   },
 
   created() {
     this.getStartData();
     this.getTikersFromLS();
+    this.checkHasNextPage();
   },
 };
 </script>
