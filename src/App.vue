@@ -200,11 +200,20 @@ export default {
     },
 
     addTikersToLS() {
+      const data = JSON.stringify(this.tikers);
+      localStorage.setItem("crypto", data);
+    },
 
+    getTikersFromLS() {
+      const data = JSON.parse(localStorage.getItem("crypto"));
+      if (data) {
+        this.tikers = data;
+        this.tikers.forEach((item) => this.subscribeOnData(item.name));
+      }
     },
 
     addTiker(value) {
-      const tikerName = typeof value === 'string' ? value : this.tiker;
+      const tikerName = typeof value === "string" ? value : this.tiker;
       if (this.tikers.find((item) => item.name === tikerName)) {
         this.validate = true;
         return;
@@ -215,6 +224,7 @@ export default {
         this.tikers.push(tiker);
         this.tiker = "";
         this.subscribeOnData(tikerName);
+        this.addTikersToLS();
       }
     },
 
@@ -225,6 +235,7 @@ export default {
 
     removeTiker(selected) {
       this.tikers = this.tikers.filter((item) => item.name !== selected.name);
+      this.addTikersToLS();
       if (this.sell?.name === selected.name) {
         this.closeSell();
       }
@@ -244,29 +255,36 @@ export default {
         (price) => 5 + ((price - minValue) * 95) / (maxValue - minValue)
       );
     },
+
+    async getStartData() {
+      const response = await fetch(
+        "https://min-api.cryptocompare.com/data/all/coinlist?summary=true"
+      );
+      if (response.ok) {
+        this.loading = false;
+        const result = await response.json();
+        this.keys = Object.keys(result.Data).map((item) => item.toLowerCase());
+      } else {
+        console.log(response.statusText);
+      }
+    },
   },
 
   watch: {
     tiker(value) {
       if (value.length > 2) {
-        this.helps = this.keys.filter((item) => item.includes(value.toLowerCase()));
+        this.helps = this.keys.filter((item) =>
+          item.includes(value.toLowerCase())
+        );
       } else if (value.length === 0) {
         this.helps = [];
       }
     },
   },
 
-  async created() {
-    const response = await fetch(
-      "https://min-api.cryptocompare.com/data/all/coinlist?summary=true"
-    );
-    if (response.ok) {
-      this.loading = false;
-      const result = await response.json();
-      this.keys = Object.keys(result.Data).map((item) => item.toLowerCase());
-    } else {
-      console.log(response.statusText);
-    }
+  created() {
+    this.getStartData();
+    this.getTikersFromLS();
   },
 };
 </script>
