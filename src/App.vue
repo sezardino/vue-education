@@ -310,12 +310,24 @@ export default {
 
     checkHasNextPage() {
       const count = this.tikers.length;
-      console.log(count);
-      console.log(count > this.page * 3);
       if (count > this.page * 3) {
         this.hasNextPage = true;
       } else {
         this.hasNextPage = false;
+      }
+    },
+
+    onCreate() {
+      const urlParams = Object.fromEntries([
+        ...new URL(window.location).searchParams.entries(),
+      ]);
+      console.log(urlParams);
+      if (urlParams.filter) {
+        this.filter = urlParams.filter;
+      }
+
+      if (urlParams.page) {
+        this.page = urlParams.page;
       }
     },
   },
@@ -332,9 +344,18 @@ export default {
     },
     page() {
       this.checkHasNextPage();
+      history.pushState(
+        "",
+        document.title,
+        `${window.location.pathname}?filter=${this.filter}&page=${this.page}`
+      );
     },
     filter() {
-      console.log(this.filter);
+      history.pushState(
+        "",
+        document.title,
+        `${window.location.pathname}?filter=${this.filter}&page=${this.page}`
+      );
     },
 
     filteredList() {
@@ -345,6 +366,7 @@ export default {
   created() {
     this.getStartData();
     this.getTikersFromLS();
+    this.onCreate();
     this.checkHasNextPage();
   },
 };
