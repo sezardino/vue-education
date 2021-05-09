@@ -82,12 +82,33 @@
           </svg>
           Add
         </button>
+        <hr class="w-full border-t border-gray-600 my-4" />
+        <div>
+          <button
+            class="my-4 mx-2 inline-flex items-center py-2 px-4 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+            v-show="page > 1"
+          >
+            Prev
+          </button>
+          <button
+            class="my-4 mx-2 inline-flex items-center py-2 px-4 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+          >
+            Next
+          </button>
+        </div>
+        <div>
+          <label
+            ><span>Filter: </span>
+            <input type="text" v-model="filter" @input="filteredList"
+          /></label>
+        </div>
+        <hr class="w-full border-t border-gray-600 my-4" />
       </section>
-      <template v-if="tikers.length">
+      <template v-if="filteredList().length">
         <hr class="w-full border-t border-gray-600 my-4" />
         <dl class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-3">
           <div
-            v-for="item in tikers"
+            v-for="item in filteredList()"
             :key="item.name"
             @click="trackSell(item)"
             :class="{ 'border-4': sell === item }"
@@ -173,11 +194,13 @@ export default {
       loading: true,
       validate: false,
       tiker: "",
+      filter: "",
       sell: null,
       graph: [],
       tikers: [],
       keys: [],
       helps: [],
+      page: 1,
     };
   },
 
@@ -225,6 +248,7 @@ export default {
         this.tiker = "";
         this.subscribeOnData(tikerName);
         this.addTikersToLS();
+        this.filter = "";
       }
     },
 
@@ -246,6 +270,12 @@ export default {
         this.sell = value;
         this.graph = [];
       }
+    },
+
+    filteredList() {
+      return this.tikers.filter((item) =>
+        item.name.includes(this.filter.toLowerCase())
+      );
     },
 
     styleGraph() {
