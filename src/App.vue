@@ -39,8 +39,8 @@
                 v-on:keydown.enter="addTiker"
                 v-model="tiker"
                 id="wallet"
-                class="block w-full pr-10 border-gray-300 text-gray-900 focus:outline-none focus:ring-gray-500 focus:border-gray-500 sm:text-sm rounded-md"
-                placeholder="Например DOGE"
+                class="block w-full uppCase pr-10 border-gray-300 text-gray-900 focus:outline-none focus:ring-gray-500 focus:border-gray-500 sm:text-sm rounded-md"
+                placeholder="DOGE"
               />
             </div>
             <div
@@ -51,9 +51,9 @@
                 <span
                   v-if="index < 4"
                   @click="addTiker(item)"
-                  class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer"
+                  class="inline-flex uppCase items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer"
                 >
-                  {{ item.toUpperCase() }}
+                  {{ item }}
                 </span>
               </template>
             </div>
@@ -94,8 +94,8 @@
             class="bg-white overflow-hidden shadow rounded-lg border-purple-800 border-solid cursor-pointer"
           >
             <div class="px-4 py-5 sm:p-6 text-center">
-              <dt class="text-sm font-medium text-gray-500 truncate">
-                {{ item.name.toUpperCase() }} - USD
+              <dt class="text-sm uppCase font-medium text-gray-500 truncate">
+                {{ item.name }} - USD
               </dt>
               <dd class="mt-1 text-3xl font-semibold text-gray-900">
                 {{ item.price }}
@@ -125,8 +125,8 @@
         <hr class="w-full border-t border-gray-600 my-4" />
       </template>
       <section class="relative" v-if="sell">
-        <h3 class="text-lg leading-6 font-medium text-gray-900 my-8">
-          {{ sell.name.toUpperCase() }} - USD
+        <h3 class="text-lg leading-6 uppCase font-medium text-gray-900 my-8">
+          {{ sell.name }} - USD
         </h3>
         <div class="flex items-end border-gray-600 border-b border-l h-64">
           <div
@@ -182,8 +182,29 @@ export default {
   },
 
   methods: {
+    subscribeOnData(tikerName) {
+      setInterval(async () => {
+        const response = await fetch(
+          `https://min-api.cryptocompare.com/data/price?fsym=${tikerName}&tsyms=USD`
+        );
+        if (response.ok) {
+          const result = await response.json();
+          this.tikers.find(
+            (item) => item.name === tikerName
+          ).price = result.USD.toFixed(2);
+          this.graph.push(result.USD);
+        } else {
+          console.log(response.statusText);
+        }
+      }, 5000);
+    },
+
+    addTikersToLS() {
+
+    },
+
     addTiker(value) {
-      const tikerName = value ? value : this.tiker;
+      const tikerName = typeof value === 'string' ? value : this.tiker;
       if (this.tikers.find((item) => item.name === tikerName)) {
         this.validate = true;
         return;
@@ -193,38 +214,29 @@ export default {
         const tiker = { name: tikerName, price: "-" };
         this.tikers.push(tiker);
         this.tiker = "";
-        setInterval(async () => {
-          const response = await fetch(
-            `https://min-api.cryptocompare.com/data/price?fsym=${tiker.name}&tsyms=USD`
-          );
-          if (response.ok) {
-            const result = await response.json();
-            this.tikers.find(
-              (item) => item.name === tiker.name
-            ).price = result.USD.toFixed(2);
-            this.graph.push(result.USD);
-          } else {
-            console.log(response.statusText);
-          }
-        }, 5000);
+        this.subscribeOnData(tikerName);
       }
     },
+
     closeSell() {
       this.sell = null;
       this.graph = [];
     },
+
     removeTiker(selected) {
       this.tikers = this.tikers.filter((item) => item.name !== selected.name);
       if (this.sell?.name === selected.name) {
         this.closeSell();
       }
     },
-    async trackSell(value) {
+
+    trackSell(value) {
       if (this.sell !== value) {
         this.sell = value;
         this.graph = [];
       }
     },
+
     styleGraph() {
       const maxValue = Math.max(...this.graph);
       const minValue = Math.min(...this.graph);
@@ -237,7 +249,7 @@ export default {
   watch: {
     tiker(value) {
       if (value.length > 2) {
-        this.helps = this.keys.filter((item) => item.includes(value));
+        this.helps = this.keys.filter((item) => item.includes(value.toLowerCase()));
       } else if (value.length === 0) {
         this.helps = [];
       }
