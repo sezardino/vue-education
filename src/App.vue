@@ -291,9 +291,6 @@ export default {
       const VALIDATE_KEYS = ["filter", "page"];
 
       VALIDATE_KEYS.map((key) => {
-        console.log(key);
-        console.log(urlParams[key]);
-        console.log(this[key]);
         if (urlParams[key]) {
           this[key] = urlParams[key];
         }
@@ -377,7 +374,6 @@ export default {
       );
     },
     tikers() {
-      console.log("change");
       const data = JSON.stringify(this.tikers);
       localStorage.setItem("crypto", data);
     },
@@ -389,7 +385,6 @@ export default {
     },
 
     pageList() {
-      console.log(1);
       if (this.pageList.length === 0 && this.page !== 1) {
         this.page = this.prevPage;
       }
