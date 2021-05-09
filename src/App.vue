@@ -87,13 +87,13 @@
           <button
             class="my-4 mx-2 inline-flex items-center py-2 px-4 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
             v-show="page > 1"
-            @click="page = page - 1"
+            @click="page = prevPage"
           >
             Prev
           </button>
           <button
             class="my-4 mx-2 inline-flex items-center py-2 px-4 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
-            @click="page = page + 1"
+            @click="page = nextPage"
             v-show="hasNextPage"
           >
             Next
@@ -105,16 +105,15 @@
             <input type="text" v-model="filter" @input="filteredList"
           /></label>
         </div>
-        <hr class="w-full border-t border-gray-600 my-4" />
       </section>
-      <template v-if="filteredList().length">
+      <template v-if="pageList.length">
         <hr class="w-full border-t border-gray-600 my-4" />
         <dl class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-3">
           <div
-            v-for="item in filteredList()"
+            v-for="item in pageList"
             :key="item.name"
-            @click="trackSell(item)"
-            :class="{ 'border-4': sell === item }"
+            @click="selectSelectedTiker(item)"
+            :class="{ 'border-4': selectedTiker === item }"
             class="bg-white overflow-hidden shadow rounded-lg border-purple-800 border-solid cursor-pointer"
           >
             <div class="px-4 py-5 sm:p-6 text-center">
@@ -148,19 +147,23 @@
         </dl>
         <hr class="w-full border-t border-gray-600 my-4" />
       </template>
-      <section class="relative" v-if="sell">
+      <section class="relative" v-if="selectedTiker">
         <h3 class="text-lg leading-6 uppCase font-medium text-gray-900 my-8">
-          {{ sell.name }} - USD
+          {{ selectedTiker.name }} - USD
         </h3>
         <div class="flex items-end border-gray-600 border-b border-l h-64">
           <div
-            v-for="(bar, index) in styleGraph()"
+            v-for="(bar, index) in styledGraph"
             :key="index"
             :style="{ height: `${bar}%` }"
             class="bg-purple-800 border w-10"
           ></div>
         </div>
-        <button @click="closeSell" type="button" class="absolute top-0 right-0">
+        <button
+          @click="closeGraphic"
+          type="button"
+          class="absolute top-0 right-0"
+        >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             xmlns:xlink="http://www.w3.org/1999/xlink"
@@ -196,15 +199,16 @@ export default {
     return {
       loading: true,
       validate: false,
+
       tiker: "",
       filter: "",
-      sell: null,
+
+      selectedTiker: null,
       graph: [],
       tikers: [],
       keys: [],
       helps: [],
       page: 1,
-      hasNextPage: false,
     };
   },
 
@@ -226,16 +230,11 @@ export default {
       }, 5000);
     },
 
-    addTikersToLS() {
-      const data = JSON.stringify(this.tikers);
-      localStorage.setItem("crypto", data);
-    },
-
     getTikersFromLS() {
       const data = JSON.parse(localStorage.getItem("crypto"));
       if (data) {
         this.tikers = data;
-        this.tikers.forEach((item) => this.subscribeOnData(item.name));
+        // this.tikers.forEach((item) => this.subscribeOnData(item.name));
       }
     },
 
@@ -248,51 +247,27 @@ export default {
       this.validate = false;
       if (tikerName) {
         const tiker = { name: tikerName, price: "-" };
-        this.tikers.push(tiker);
+        this.tikers = [...this.tikers, tiker];
         this.tiker = "";
-        this.subscribeOnData(tikerName);
-        this.addTikersToLS();
+        // this.subscribeOnData(tikerName);
         this.filter = "";
       }
     },
 
-    closeSell() {
-      this.sell = null;
+    closeGraphik() {
+      this.selectedTiker = null;
       this.graph = [];
     },
 
     removeTiker(selected) {
       this.tikers = this.tikers.filter((item) => item.name !== selected.name);
-      this.addTikersToLS();
-      if (this.sell?.name === selected.name) {
-        this.closeSell();
+      if (this.selectedTiker?.name === selected.name) {
+        this.closeGraphik();
       }
     },
 
-    trackSell(value) {
-      if (this.sell !== value) {
-        this.sell = value;
-        this.graph = [];
-      }
-    },
-
-    filteredList() {
-      const filteredList = this.tikers.filter((item) =>
-        item.name.includes(this.filter.toLowerCase())
-      );
-
-      const start = 3 * (this.page - 1);
-      const end = 3 * this.page;
-
-      return filteredList.slice(start, end);
-    },
-
-    styleGraph() {
-      const maxValue = Math.max(...this.graph);
-      const minValue = Math.min(...this.graph);
-      return this.graph.map(
-        (price) => 5 + ((price - minValue) * 95) / (maxValue - minValue)
-      );
+    selectSelectedTiker(value) {
+      this.selectedTiker = value;
     },
 
     async getStartData() {
@@ -308,27 +283,71 @@ export default {
       }
     },
 
-    checkHasNextPage() {
-      const count = this.tikers.length;
-      if (count > this.page * 3) {
-        this.hasNextPage = true;
-      } else {
-        this.hasNextPage = false;
-      }
-    },
-
     onCreate() {
       const urlParams = Object.fromEntries([
         ...new URL(window.location).searchParams.entries(),
       ]);
-      console.log(urlParams);
-      if (urlParams.filter) {
-        this.filter = urlParams.filter;
-      }
 
-      if (urlParams.page) {
-        this.page = urlParams.page;
+      const VALIDATE_KEYS = ["filter", "page"];
+
+      VALIDATE_KEYS.map((key) => {
+        console.log(key);
+        console.log(urlParams[key]);
+        console.log(this[key]);
+        if (urlParams[key]) {
+          this[key] = urlParams[key];
+        }
+      });
+    },
+  },
+
+  computed: {
+    nextPage() {
+      return +this.page + 1;
+    },
+
+    prevPage() {
+      return +this.page - 1;
+    },
+
+    hasNextPage() {
+      const count = this.tikers.length;
+      if (count > this.page * 3) {
+        return true;
+      } else {
+        return false;
       }
+    },
+
+    styledGraph() {
+      const maxValue = Math.max(...this.graph);
+      const minValue = Math.min(...this.graph);
+      if (maxValue === minValue) {
+        this.graph.map(() => 50);
+      }
+      return this.graph.map(
+        (price) => 5 + ((price - minValue) * 95) / (maxValue - minValue)
+      );
+    },
+
+    filteredList() {
+      const filteredList = this.tikers.filter((item) =>
+        item.name.includes(this.filter.toLowerCase())
+      );
+
+      return filteredList;
+    },
+
+    startIndex() {
+      return 3 * (this.page - 1);
+    },
+
+    endIndex() {
+      return 3 * this.page;
+    },
+
+    pageList() {
+      return this.filteredList.slice(this.startIndex, this.endIndex);
     },
   },
 
@@ -343,7 +362,7 @@ export default {
       }
     },
     page() {
-      this.checkHasNextPage();
+      this.hasNextPage;
       history.pushState(
         "",
         document.title,
@@ -357,9 +376,23 @@ export default {
         `${window.location.pathname}?filter=${this.filter}&page=${this.page}`
       );
     },
+    tikers() {
+      console.log("change");
+      const data = JSON.stringify(this.tikers);
+      localStorage.setItem("crypto", data);
+    },
 
-    filteredList() {
-      this.checkHasNextPage();
+    selectedTiker(value, newValue) {
+      if (value !== newValue) {
+        this.graph = [];
+      }
+    },
+
+    pageList() {
+      console.log(1);
+      if (this.pageList.length === 0 && this.page !== 1) {
+        this.page = this.prevPage;
+      }
     },
   },
 
@@ -367,7 +400,7 @@ export default {
     this.getStartData();
     this.getTikersFromLS();
     this.onCreate();
-    this.checkHasNextPage();
+    this.hasNextPage;
   },
 };
 </script>
