@@ -218,23 +218,6 @@ export default {
   },
 
   methods: {
-    subscribeOnData() {
-      this.tikers.forEach(async (item) => {
-        const price = await api.subscribeOnCoin(item.name);
-        item.price = price;
-        item.graph ??= [];
-        item.graph.push(price);
-      });
-    },
-
-    getTikersFromLS() {
-      const data = JSON.parse(localStorage.getItem("crypto"));
-      if (data) {
-        this.tikers = data;
-        // this.tikers.forEach((item) => this.subscribeOnData(item.name));
-      }
-    },
-
     addTiker(value) {
       const tikerName = typeof value === "string" ? value : this.tiker;
       if (this.tikers.find((item) => item.name === tikerName)) {
@@ -246,8 +229,10 @@ export default {
         const tiker = { name: tikerName, price: "-" };
         this.tikers = [...this.tikers, tiker];
         this.tiker = "";
-        // this.subscribeOnData(tikerName);
         this.filter = "";
+        api.subscribeOnChanges(tiker.name, (newPrice) =>
+          this.updateTiker(tiker.name, newPrice)
+        );
       }
     },
 
@@ -258,6 +243,7 @@ export default {
 
     removeTiker(selected) {
       this.tikers = this.tikers.filter((item) => item.name !== selected.name);
+      api.unsubscribeOnChanges(selected.name);
       if (this.selectedTiker?.name === selected.name) {
         this.closeGraphik();
       }
@@ -267,21 +253,16 @@ export default {
       this.selectedTiker = value;
     },
 
+    updateTiker(name, newPrice) {
+      const updatedTikker = this.tikers.filter((tiker) => tiker.name === name);
+      updatedTikker.forEach((tiker) => (tiker.price = newPrice));
+    },
+
     async getStartData() {
       this.keys = await api.getCoinList(
         () => (this.loading = false),
         () => (this.error = true)
       );
-      // const response = await fetch(
-      //   "https://min-api.cryptocompare.com/data/all/coinlist?summary=true"
-      // );
-      // if (response.ok) {
-      //   this.loading = false;
-      //   const result = await response.json();
-      //   this.keys = Object.keys(result.Data).map((item) => item.toLowerCase());
-      // } else {
-      //   console.log(response.statusText);
-      // }
     },
 
     onCreate() {
@@ -399,11 +380,20 @@ export default {
 
   created() {
     this.getStartData();
-    this.getTikersFromLS();
+
+    const data = JSON.parse(localStorage.getItem("crypto"));
+    if (data) {
+      this.tikers = data;
+    }
+
     this.onCreate();
     this.hasNextPage;
 
-    setInterval(this.subscribeOnData, 5000);
+    this.tikers.forEach((item) =>
+      api.subscribeOnChanges(item.name, (price) =>
+        this.updateTiker(item.name, price)
+      )
+    );
   },
 };
 </script>
