@@ -44,10 +44,10 @@
               />
             </div>
             <div
-              v-show="helps.length"
+              v-show="placeholders.length"
               class="flex bg-white shadow-md p-1 rounded-md shadow-md flex-wrap"
             >
-              <template v-for="(item, index) in helps" :key="item">
+              <template v-for="(item, index) in placeholders" :key="item">
                 <span
                   v-if="index < 4"
                   @click="addTiker(item)"
@@ -192,12 +192,15 @@
 </template>
 
 <script>
+import { api } from "./api";
+
 export default {
   name: "App",
 
   data() {
     return {
       loading: true,
+      error: false,
       validate: false,
 
       tiker: "",
@@ -207,27 +210,21 @@ export default {
       graph: [],
       tikers: [],
       keys: [],
-      helps: [],
+
+      placeholders: [],
+
       page: 1,
     };
   },
 
   methods: {
-    subscribeOnData(tikerName) {
-      setInterval(async () => {
-        const response = await fetch(
-          `https://min-api.cryptocompare.com/data/price?fsym=${tikerName}&tsyms=USD`
-        );
-        if (response.ok) {
-          const result = await response.json();
-          this.tikers.find(
-            (item) => item.name === tikerName
-          ).price = result.USD.toFixed(2);
-          this.graph.push(result.USD);
-        } else {
-          console.log(response.statusText);
-        }
-      }, 5000);
+    subscribeOnData() {
+      this.tikers.forEach(async (item) => {
+        const price = await api.subscribeOnCoin(item.name);
+        item.price = price;
+        item.graph ??= [];
+        item.graph.push(price);
+      });
     },
 
     getTikersFromLS() {
@@ -271,16 +268,20 @@ export default {
     },
 
     async getStartData() {
-      const response = await fetch(
-        "https://min-api.cryptocompare.com/data/all/coinlist?summary=true"
+      this.keys = await api.getCoinList(
+        () => (this.loading = false),
+        () => (this.error = true)
       );
-      if (response.ok) {
-        this.loading = false;
-        const result = await response.json();
-        this.keys = Object.keys(result.Data).map((item) => item.toLowerCase());
-      } else {
-        console.log(response.statusText);
-      }
+      // const response = await fetch(
+      //   "https://min-api.cryptocompare.com/data/all/coinlist?summary=true"
+      // );
+      // if (response.ok) {
+      //   this.loading = false;
+      //   const result = await response.json();
+      //   this.keys = Object.keys(result.Data).map((item) => item.toLowerCase());
+      // } else {
+      //   console.log(response.statusText);
+      // }
     },
 
     onCreate() {
@@ -351,11 +352,11 @@ export default {
   watch: {
     tiker(value) {
       if (value.length > 2) {
-        this.helps = this.keys.filter((item) =>
+        this.placeholders = this.keys.filter((item) =>
           item.includes(value.toLowerCase())
         );
       } else if (value.length === 0) {
-        this.helps = [];
+        this.placeholders = [];
       }
     },
     page() {
@@ -374,13 +375,18 @@ export default {
       );
     },
     tikers() {
-      const data = JSON.stringify(this.tikers);
-      localStorage.setItem("crypto", data);
+      const transformedTikers = this.tikers.map((item) => ({
+        name: item.name,
+        price: "-",
+      }));
+      const stringifiedTikers = JSON.stringify(transformedTikers);
+      localStorage.setItem("crypto", stringifiedTikers);
     },
 
-    selectedTiker(value, newValue) {
-      if (value !== newValue) {
-        this.graph = [];
+    selectedTiker(newValue, oldValue) {
+      if (newValue !== oldValue) {
+        this.graph = newValue.graph;
+        return;
       }
     },
 
@@ -396,6 +402,8 @@ export default {
     this.getTikersFromLS();
     this.onCreate();
     this.hasNextPage;
+
+    setInterval(this.subscribeOnData, 5000);
   },
 };
 </script>
