@@ -259,10 +259,10 @@ export default {
     },
 
     async getStartData() {
-      this.keys = await api.getCoinList(
-        () => (this.loading = false),
-        () => (this.error = true)
-      );
+      // this.keys = await api.getCoinList(
+      //   () => (this.loading = false),
+      //   () => (this.error = true)
+      // );
     },
 
     onCreate() {
