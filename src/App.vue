@@ -259,10 +259,7 @@ export default {
     },
 
     async getStartData() {
-      // this.keys = await api.getCoinList(
-      //   () => (this.loading = false),
-      //   () => (this.error = true)
-      // );
+      this.keys = await api.getCoinList();
     },
 
     onCreate() {
@@ -331,6 +328,9 @@ export default {
   },
 
   watch: {
+    keys() {
+      this.loading = false;
+    },
     tiker(value) {
       if (value.length > 2) {
         this.placeholders = this.keys.filter((item) =>

@@ -6,13 +6,28 @@ class WebSocketApi {
         this.socket = new WebSocket(`${this.baseUrl}?api_key=${this.key}`);
         this.tickersHandlers = new Map();
 
+        this.btcExchange = 0;
+
         this.init();
     }
 
     AGGREGATE_INDEX = "5";
+    INVALID_SUB = "500";
+    RESPONSE_ANSWER = {
+        SUCCESS: "Success",
+        ERROR: "Error",
+    };
 
-    sendMessageToWB(tickerName) {
-        const sendMessage = JSON.stringify(this.subscribeMessage(tickerName));
+    _transformCoinList(list) {
+        const keys = Object.keys(list);
+        const formattedKeys = keys.map((item) => item.toLowerCase());
+        return formattedKeys;
+    }
+
+    sendMessageToWB(tickerName, to) {
+        const sendMessage = JSON.stringify(
+            this.subscribeMessage(tickerName, to)
+        );
         if (this.socket.readyState === this.socket.OPEN) {
             this.socket.send(sendMessage);
             return;
@@ -27,10 +42,10 @@ class WebSocketApi {
         );
     }
 
-    subscribeMessage(tickerName) {
+    subscribeMessage(tickerName, to = "USD") {
         return {
             action: "SubAdd",
-            subs: [`5~CCCAGG~${tickerName.toUpperCase()}~USD`],
+            subs: [`5~CCCAGG~${tickerName.toUpperCase()}~${to.toUpperCase()}`],
         };
     }
 
@@ -53,6 +68,21 @@ class WebSocketApi {
     unsubscribeOnChanges(value) {
         this.tickersHandlers.delete(value);
     }
+    async getCoinList() {
+        const response = await fetch(
+            `https://min-api.cryptocompare.com/data/all/coinlist?summary=true`
+        );
+        if (response.ok) {
+            const result = await response.json();
+            if (result.Response === this.RESPONSE_ANSWER.SUCCESS) {
+                return this._transformCoinList(result.Data);
+            } else if (result.Response === this.RESPONSE_ANSWER.ERROR) {
+                console.log(result.message);
+            }
+        } else {
+            console.log(response.text);
+        }
+    }
 
     init() {
         this.socket.addEventListener("message", (message) => {
@@ -65,10 +95,11 @@ class WebSocketApi {
             if (type !== this.AGGREGATE_INDEX) {
                 return;
             }
-            // console.log(parsedMessage);
+            if (!newPrice) {
+                return;
+            }
             const subscribers =
                 this.tickersHandlers.get(currency.toLowerCase()) || [];
-            console.log(currency, subscribers);
             subscribers.forEach((item) => item(newPrice));
         });
     }
